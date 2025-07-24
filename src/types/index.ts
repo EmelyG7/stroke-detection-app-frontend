@@ -11,14 +11,20 @@ export interface DashboardStats {
 
 export interface Patient {
     id: string;
-    _id?: string; // Add for DiagnosisForm compatibility
+    _id?: string;
     name: string;
     age: number;
     gender: string;
+    smoker: boolean;
+    alcoholic: boolean;
+    hypertension: boolean;
+    diabetes: boolean;
+    heart_disease: boolean;
     created_at: string;
 }
 
 export interface ImageAnalysis {
+    id: string;
     image_id: string;
     filename: string;
     diagnosis: string;
@@ -29,14 +35,14 @@ export interface ImageAnalysis {
 }
 
 export interface Consultation {
-    consultation_id: string;
+    id: string;
     patient_id: string;
     patient_name: string;
     date: string;
     notes?: string;
     diagnosis: string;
     probability: number;
-    image_analyses: ImageAnalysis[];
+    images: ImageAnalysis[];
     created_at: string;
 }
 
