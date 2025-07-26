@@ -16,18 +16,17 @@ interface Patient {
     name: string;
 }
 
-interface ConsultationData {
+interface ConsultationFormData {
     patient_id: string;
     date: string;
     notes: string;
-    images?: File[];
 }
 
 export default function ConsultationForm() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [patients, setPatients] = useState<Patient[]>([]);
-    const [formData, setFormData] = useState<ConsultationData>({
+    const [formData, setFormData] = useState<ConsultationFormData>({
         patient_id: '',
         date: new Date().toISOString().split('T')[0],
         notes: ''
@@ -37,36 +36,36 @@ export default function ConsultationForm() {
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
+        const fetchPatients = async () => {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/patients/`);
+                setPatients(response.data);
+            } catch (error) {
+                toast.error('Error loading patients');
+            }
+        };
+
         fetchPatients();
+
         if (id) {
+            const fetchConsultation = async () => {
+                try {
+                    const response = await axios.get(`${API_BASE_URL}/consultations/${id}`);
+                    const consultation = response.data;
+                    setFormData({
+                        patient_id: consultation.patient_id,
+                        date: consultation.date.split('T')[0],
+                        notes: consultation.notes || ''
+                    });
+                    setIsEditing(true);
+                } catch (error) {
+                    toast.error('Error loading consultation');
+                    navigate('/consultations');
+                }
+            };
             fetchConsultation();
-            setIsEditing(true);
         }
-    }, [id]);
-
-    const fetchPatients = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/patients/`);
-            setPatients(response.data.data);
-        } catch (error) {
-            toast.error('Error loading patients');
-        }
-    };
-
-    const fetchConsultation = async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/consultations/${id}/`);
-            const consultation = response.data.data;
-            setFormData({
-                patient_id: consultation.patient_id,
-                date: consultation.date.split('T')[0],
-                notes: consultation.notes || ''
-            });
-        } catch (error) {
-            toast.error('Error loading consultation');
-            navigate('/consultations');
-        }
-    };
+    }, [id, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -74,20 +73,22 @@ export default function ConsultationForm() {
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        const validFiles = files.filter(file => {
-            if (!file.type.startsWith('image/')) {
-                toast.error(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                toast.error(`${file.name} is too large (max 10MB)`);
-                return false;
-            }
-            return true;
-        });
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            const validFiles = files.filter(file => {
+                if (!file.type.startsWith('image/')) {
+                    toast.error(`${file.name} is not a valid image`);
+                    return false;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    toast.error(`${file.name} is too large (max 10MB)`);
+                    return false;
+                }
+                return true;
+            });
 
-        setImages(prev => [...prev, ...validFiles]);
+            setImages(prev => [...prev, ...validFiles]);
+        }
     };
 
     const removeImage = (index: number) => {
@@ -99,30 +100,35 @@ export default function ConsultationForm() {
         setLoading(true);
 
         try {
-            const data = new FormData();
-            data.append('patient_id', formData.patient_id);
-            data.append('date', formData.date);
-            data.append('notes', formData.notes);
-            images.forEach(image => data.append('images', image));
+            const formDataObj = new FormData();
+            formDataObj.append('patient_id', formData.patient_id);
+            formDataObj.append('date', formData.date);
+            formDataObj.append('notes', formData.notes);
+
+            images.forEach(image => {
+                formDataObj.append('images', image);
+            });
+
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            };
 
             if (isEditing) {
-                await axios.put(`${API_BASE_URL}/consultations/${id}/`, data, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
+                await axios.put(`${API_BASE_URL}/consultations/${id}`, formDataObj, config);
                 toast.success('Consultation updated successfully');
             } else {
-                await axios.post(`${API_BASE_URL}/consultations/`, data, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
+                await axios.post(`${API_BASE_URL}/consultations/`, formDataObj, config);
                 toast.success('Consultation created successfully');
             }
             navigate('/consultations');
         } catch (error) {
-            toast.error('Error saving consultation');
+            if (axios.isAxiosError(error)) {
+                toast.error(error.response?.data?.detail || 'Error saving consultation');
+            } else {
+                toast.error('Error saving consultation');
+            }
         } finally {
             setLoading(false);
         }
@@ -141,7 +147,7 @@ export default function ConsultationForm() {
                 <h1 className="text-2xl font-bold text-gray-900">
                     {isEditing ? 'Edit Consultation' : 'New Consultation'}
                 </h1>
-                <div className="w-6"></div> {/* Spacer for alignment */}
+                <div className="w-6"></div>
             </div>
 
             <div className="bg-white shadow rounded-lg">
@@ -154,7 +160,7 @@ export default function ConsultationForm() {
                             <select
                                 name="patient_id"
                                 required
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 value={formData.patient_id}
                                 onChange={handleChange}
                                 disabled={isEditing}
@@ -176,7 +182,7 @@ export default function ConsultationForm() {
                                 type="date"
                                 name="date"
                                 required
-                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                                 value={formData.date}
                                 onChange={handleChange}
                             />
@@ -190,7 +196,7 @@ export default function ConsultationForm() {
                         <textarea
                             name="notes"
                             rows={3}
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Add consultation notes..."
                             value={formData.notes}
                             onChange={handleChange}
@@ -200,13 +206,13 @@ export default function ConsultationForm() {
                     {!isEditing && (
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
-                                DWI Images {!isEditing && '*'}
+                                DWI Images *
                             </label>
-                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors duration-200">
+                            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                                 <div className="space-y-1 text-center">
                                     <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
                                     <div className="flex text-sm text-gray-600">
-                                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
                                             <span>Upload images</span>
                                             <input
                                                 type="file"
@@ -214,6 +220,7 @@ export default function ConsultationForm() {
                                                 multiple
                                                 accept="image/*"
                                                 onChange={handleImageUpload}
+                                                required={!isEditing && images.length === 0}
                                             />
                                         </label>
                                         <p className="pl-1">or drag and drop</p>
@@ -240,7 +247,7 @@ export default function ConsultationForm() {
                                         <button
                                             type="button"
                                             onClick={() => removeImage(index)}
-                                            className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-700"
+                                            className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                                         >
                                             <TrashIcon className="h-4 w-4" />
                                         </button>
@@ -257,18 +264,21 @@ export default function ConsultationForm() {
                         <button
                             type="button"
                             onClick={() => navigate('/consultations')}
-                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading || !formData.patient_id || (!isEditing && images.length === 0)}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                         >
                             {loading ? (
                                 <>
-                                    <div className="animate-spin -ml-1 mr-3 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
                                     Processing...
                                 </>
                             ) : (

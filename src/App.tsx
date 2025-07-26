@@ -11,7 +11,6 @@ import Layout from './components/Layout';
 import NotFound from './pages/NotFound';
 import type { JSX } from "react";
 
-// Componente para rutas protegidas
 const ProtectedRoute = ({ children, requiredRoles = [] }: { children: JSX.Element, requiredRoles?: string[] }) => {
     const { user } = useAuth();
 
@@ -30,10 +29,10 @@ function App() {
     return (
         <AuthProvider>
             <Routes>
-                {/* Rutas públicas */}
+                {/* Public routes */}
                 <Route path="/login" element={<Login />} />
 
-                {/* Rutas protegidas */}
+                {/* Protected routes */}
                 <Route element={<Layout />}>
                     <Route index element={
                         <ProtectedRoute>
@@ -66,6 +65,11 @@ function App() {
                                 <ConsultationDetail />
                             </ProtectedRoute>
                         } />
+                        <Route path=":id/edit" element={
+                            <ProtectedRoute requiredRoles={['doctor', 'admin']}>
+                                <ConsultationForm />
+                            </ProtectedRoute>
+                        } />
                     </Route>
                     <Route path="users" element={
                         <ProtectedRoute requiredRoles={['admin']}>
@@ -74,7 +78,7 @@ function App() {
                     } />
                 </Route>
 
-                {/* Redirección para rutas no encontradas */}
+                {/* Not found route */}
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </AuthProvider>

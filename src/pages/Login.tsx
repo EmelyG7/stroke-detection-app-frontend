@@ -5,10 +5,13 @@ import {
     LockClosedIcon,
     EyeIcon,
     EyeSlashIcon,
-    UserIcon
+    UserIcon,
+    ShieldCheckIcon,
+    ChartBarIcon,
+    HeartIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import logo from '../assets/logo.svg'; // Replace with your actual logo
+import logo from '../assets/logo.svg';
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -19,7 +22,6 @@ export default function Login() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Check for remembered credentials on component mount
     useEffect(() => {
         const rememberedUsername = localStorage.getItem('rememberedUsername');
         if (rememberedUsername) {
@@ -39,7 +41,6 @@ export default function Login() {
         try {
             await login(username, password);
 
-            // Store username if "Remember me" is checked
             if (rememberMe) {
                 localStorage.setItem('rememberedUsername', username);
             } else {
@@ -47,8 +48,6 @@ export default function Login() {
             }
 
             toast.success('Login successful');
-
-            // Redirect to previous page or dashboard
             const from = location.state?.from?.pathname || '/dashboard';
             navigate(from, { replace: true });
         } catch (error) {
@@ -57,30 +56,77 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-            <div className="w-full max-w-md">
-                <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
-                    {/* Header Section */}
-                    <div className="bg-blue-600 p-6 text-center">
-                        <div className="flex justify-center mb-4">
-                            <img src={logo} alt="Stroke System Logo" className="h-16 w-auto" />
+        <div className="fixed inset-0 flex bg-gradient-to-br from-blue-50 to-indigo-50 overflow-auto">
+            {/* Panel izquierdo - Información */}
+            <div className="hidden lg:flex lg:w-1/2 h-full bg-gradient-to-br from-blue-600 to-indigo-700 overflow-auto">
+                <div className="flex flex-col justify-center px-8 py-12 w-full h-full min-h-[600px]">
+                    <div className="max-w-lg mx-auto w-full space-y-8 h-full flex flex-col justify-center">
+                        <div className="flex justify-center">
+                            <img src={logo} alt="Stroke System Logo" className="h-28 w-auto" />
                         </div>
-                        <h1 className="text-2xl font-bold text-white">Stroke Detection System</h1>
-                        <p className="mt-2 text-blue-100">
-                            Intelligent Stroke Risk Assessment Platform
-                        </p>
+
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl font-bold text-white leading-tight">
+                                Stroke Detection <span className="text-blue-200">System</span>
+                            </h1>
+                            <p className="text-blue-100 text-xl leading-relaxed">
+                                Advanced AI-powered platform for stroke risk assessment
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="flex items-start space-x-4 p-4 bg-blue-500/20 rounded-xl backdrop-blur-sm">
+                                <ShieldCheckIcon className="h-8 w-8 text-blue-200 mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">Secure Platform</h3>
+                                    <p className="text-blue-100">HIPAA compliant data protection</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start space-x-4 p-4 bg-blue-500/20 rounded-xl backdrop-blur-sm">
+                                <ChartBarIcon className="h-8 w-8 text-blue-200 mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">Real-time Analytics</h3>
+                                    <p className="text-blue-100">Instant risk assessment results</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start space-x-4 p-4 bg-blue-500/20 rounded-xl backdrop-blur-sm">
+                                <HeartIcon className="h-8 w-8 text-blue-200 mt-1 flex-shrink-0" />
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">Patient Focused</h3>
+                                    <p className="text-blue-100">Personalized care plans</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Panel derecho - Formulario */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-6 h-full overflow-auto">
+                <div className="w-full max-w-md mx-auto my-auto">
+                    <div className="text-center lg:hidden mb-8">
+                        <img src={logo} alt="Logo" className="h-20 mx-auto mb-4" />
+                        <h2 className="text-3xl font-bold text-gray-800">Stroke Detection</h2>
+                        <p className="mt-2 text-gray-600">Sign in to your account</p>
                     </div>
 
-                    {/* Login Form */}
-                    <div className="p-8">
-                        <form className="space-y-6" onSubmit={handleSubmit}>
-                            <div>
-                                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-2xl border border-gray-100">
+                        <div className="text-center mb-10">
+                            <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
+                            <p className="mt-3 text-gray-600 text-lg">Please enter your credentials</p>
+                        </div>
+
+                        <form className="space-y-7" onSubmit={handleSubmit}>
+                            {/* Campo de Usuario - Más grande */}
+                            <div className="space-y-3">
+                                <label htmlFor="username" className="block text-base font-medium text-gray-700">
                                     Username
                                 </label>
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <UserIcon className="h-5 w-5 text-gray-400" />
+                                <div className="relative rounded-xl shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <UserIcon className="h-6 w-6 text-gray-400" />
                                     </div>
                                     <input
                                         id="username"
@@ -88,7 +134,7 @@ export default function Login() {
                                         type="text"
                                         autoComplete="username"
                                         required
-                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-500 focus:border-blue-500 text-lg placeholder-gray-400"
                                         placeholder="Enter your username"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
@@ -97,13 +143,14 @@ export default function Login() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                            {/* Campo de Contraseña - Más grande */}
+                            <div className="space-y-3">
+                                <label htmlFor="password" className="block text-base font-medium text-gray-700">
                                     Password
                                 </label>
-                                <div className="relative rounded-md shadow-sm">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                                <div className="relative rounded-xl shadow-sm">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <LockClosedIcon className="h-6 w-6 text-gray-400" />
                                     </div>
                                     <input
                                         id="password"
@@ -111,22 +158,22 @@ export default function Login() {
                                         type={showPassword ? 'text' : 'password'}
                                         autoComplete="current-password"
                                         required
-                                        className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="block w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-500 focus:border-blue-500 text-lg placeholder-gray-400"
                                         placeholder="Enter your password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         disabled={loading}
                                     />
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                                         <button
                                             type="button"
-                                            className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                                            className="text-gray-400 hover:text-gray-500 focus:outline-none p-2 rounded-full hover:bg-gray-100"
                                             onClick={() => setShowPassword(!showPassword)}
                                         >
                                             {showPassword ? (
-                                                <EyeSlashIcon className="h-5 w-5" />
+                                                <EyeSlashIcon className="h-6 w-6" />
                                             ) : (
-                                                <EyeIcon className="h-5 w-5" />
+                                                <EyeIcon className="h-6 w-6" />
                                             )}
                                         </button>
                                     </div>
@@ -139,23 +186,23 @@ export default function Login() {
                                         id="remember-me"
                                         name="remember-me"
                                         type="checkbox"
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                         checked={rememberMe}
                                         onChange={(e) => setRememberMe(e.target.checked)}
                                         disabled={loading}
                                     />
-                                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                                    <label htmlFor="remember-me" className="ml-3 block text-base text-gray-700">
                                         Remember me
                                     </label>
                                 </div>
 
-                                <div className="text-sm">
+                                <div className="text-base">
                                     <a
                                         href="#"
                                         className="font-medium text-blue-600 hover:text-blue-500"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            toast('Please contact system administrator', {
+                                            toast('Please contact your system administrator', {
                                                 icon: 'ℹ️',
                                             });
                                         }}
@@ -165,18 +212,19 @@ export default function Login() {
                                 </div>
                             </div>
 
+                            {/* Botón de Login - Más grande */}
                             <div>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
+                                    className={`w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-3 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ${
                                         loading ? 'opacity-70 cursor-not-allowed' : ''
                                     }`}
                                 >
                                     {loading ? (
                                         <>
                                             <svg
-                                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                                className="animate-spin -ml-1 mr-3 h-6 w-6 text-white"
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
@@ -199,7 +247,7 @@ export default function Login() {
                                         </>
                                     ) : (
                                         <>
-                                            <LockClosedIcon className="h-5 w-5 mr-2" />
+                                            <LockClosedIcon className="h-6 w-6 mr-3" />
                                             Sign in
                                         </>
                                     )}
@@ -208,48 +256,63 @@ export default function Login() {
                         </form>
 
                         {/* Demo credentials */}
-                        <div className="mt-6">
+                        <div className="mt-10">
                             <div className="relative">
                                 <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-300"></div>
+                                    <div className="w-full border-t border-gray-200"></div>
                                 </div>
                                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">
-                    Demo credentials
-                  </span>
+                                    <span className="px-3 bg-white text-gray-500 text-base">
+                                        Demo credentials
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="mt-4 grid grid-cols-2 gap-2">
+                            <div className="mt-8 space-y-4">
                                 <button
                                     onClick={() => {
                                         setUsername('admin');
                                         setPassword('admin123');
                                     }}
-                                    className="text-xs text-center p-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all border border-gray-200 group"
                                 >
-                                    <p className="font-medium">Admin</p>
-                                    <p className="text-gray-500">admin/admin123</p>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                            <UserIcon className="h-5 w-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-base font-medium text-gray-800">Administrator</p>
+                                            <p className="text-sm text-gray-500">Full system access</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700">Use this account</span>
                                 </button>
+
                                 <button
                                     onClick={() => {
                                         setUsername('doctor');
                                         setPassword('doctor123');
                                     }}
-                                    className="text-xs text-center p-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all border border-gray-200 group"
                                 >
-                                    <p className="font-medium">Doctor</p>
-                                    <p className="text-gray-500">doctor/doctor123</p>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                            <UserIcon className="h-5 w-5" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-base font-medium text-gray-800">Doctor</p>
+                                            <p className="text-sm text-gray-500">Clinical access</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-sm font-medium text-indigo-600 group-hover:text-indigo-700">Use this account</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Footer */}
-                <div className="mt-6 text-center text-sm text-gray-500">
-                    <p>© {new Date().getFullYear()} Stroke Detection System. All rights reserved.</p>
-                    <p className="mt-1">Version 1.0.0</p>
+                    <div className="text-center text-sm text-gray-400 mt-8">
+                        <p>© {new Date().getFullYear()} Stroke Detection System. v1.0.0</p>
+                    </div>
                 </div>
             </div>
         </div>
