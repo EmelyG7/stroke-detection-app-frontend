@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import {
+    UserGroupIcon,
+    PlusIcon,
+    PencilIcon,
+    TrashIcon,
+    FunnelIcon,
+    MagnifyingGlassIcon,
+    ArrowDownTrayIcon,
+    XMarkIcon,
+    UserIcon,
+    ExclamationTriangleIcon,
+    HeartIcon,
+    FireIcon,
+    ShieldCheckIcon,
+    ChartBarIcon
+} from '@heroicons/react/24/outline';
+import { useAuth } from '../context/AuthContext';
 import type { Patient } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -15,13 +33,37 @@ type PatientFormData = {
     name: string;
     age: number;
     gender: string;
+    hypertension?: boolean;
+    diabetes?: boolean;
+    heart_disease?: boolean;
+    smoker?: boolean;
+    alcoholic?: boolean;
 };
+
+interface FilterState {
+    search: string;
+    ageRange: string;
+    gender: string;
+    riskFactors: string;
+}
 
 const Patients = () => {
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
     const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showForm, setShowForm] = useState(false);
+    const [showFilters, setShowFilters] = useState(false);
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const { user } = useAuth();
+
+    const [filters, setFilters] = useState<FilterState>({
+        search: '',
+        ageRange: 'all',
+        gender: 'all',
+        riskFactors: 'all'
+    });
 
     const {
         register,
@@ -31,33 +73,106 @@ const Patients = () => {
         formState: { errors }
     } = useForm<PatientFormData>();
 
+    // Estadísticas calculadas
+    const calculateStats = () => {
+        const total = patients.length;
+        const maleCount = patients.filter(p => p.gender === 'Male').length;
+        const femaleCount = patients.filter(p => p.gender === 'Female').length;
+        const withRiskFactors = patients.filter(p =>
+            p.hypertension || p.diabetes || p.heart_disease || p.smoker || p.alcoholic
+        ).length;
+        const avgAge = patients.reduce((sum, p) => sum + p.age, 0) / total || 0;
+        const highRisk = patients.filter(p => {
+            const riskCount = [p.hypertension, p.diabetes, p.heart_disease, p.smoker, p.alcoholic]
+                .filter(Boolean).length;
+            return riskCount >= 3;
+        }).length;
+
+        return {
+            total,
+            maleCount,
+            femaleCount,
+            withRiskFactors,
+            avgAge,
+            highRisk
+        };
+    };
+
+    const stats = calculateStats();
+
     // Fetch patients on component mount
     useEffect(() => {
         const fetchPatients = async () => {
-            setIsLoading(true);
+            setLoading(true);
             setError(null);
             try {
                 const response = await axios.get<ApiResponse<Patient[]>>(`${API_BASE_URL}/patients/`);
                 if (response.data.success) {
                     setPatients(response.data.data);
+                    setFilteredPatients(response.data.data);
                 } else {
-                    setError(response.data.message || 'Failed to fetch patients');
+                    const errorMessage = response.data.message || 'Failed to fetch patients';
+                    setError(errorMessage);
+                    toast.error(errorMessage);
                 }
             } catch (err) {
-                setError(axios.isAxiosError(err)
+                const errorMessage = axios.isAxiosError(err)
                     ? err.response?.data?.error || err.message
-                    : 'Unknown error occurred');
+                    : 'Unknown error occurred';
+                setError(errorMessage);
+                toast.error(errorMessage);
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
 
         fetchPatients();
     }, []);
 
+    // Filtrado de pacientes
+    useEffect(() => {
+        let filtered = [...patients];
+
+        // Filtro de búsqueda
+        if (filters.search.trim()) {
+            const searchTerm = filters.search.toLowerCase().trim();
+            filtered = filtered.filter(p =>
+                p.name?.toLowerCase().includes(searchTerm) ||
+                p.id?.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // Filtro de género
+        if (filters.gender !== 'all') {
+            filtered = filtered.filter(p => p.gender === filters.gender);
+        }
+
+        // Filtro de edad
+        if (filters.ageRange !== 'all') {
+            filtered = filtered.filter(p => {
+                switch (filters.ageRange) {
+                    case 'young': return p.age < 30;
+                    case 'adult': return p.age >= 30 && p.age < 60;
+                    case 'senior': return p.age >= 60;
+                    default: return true;
+                }
+            });
+        }
+
+        // Filtro de factores de riesgo
+        if (filters.riskFactors !== 'all') {
+            filtered = filtered.filter(p => {
+                const hasRiskFactors = p.hypertension || p.diabetes || p.heart_disease || p.smoker || p.alcoholic;
+                return filters.riskFactors === 'with' ? hasRiskFactors : !hasRiskFactors;
+            });
+        }
+
+        setFilteredPatients(filtered);
+    }, [filters, patients]);
+
     // Handle form submission
     const onSubmit = async (formData: PatientFormData) => {
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
 
         try {
@@ -71,10 +186,13 @@ const Patients = () => {
                 if (response.data.success) {
                     setPatients(patients.map(p =>
                         p.id === editingPatient.id ? response.data.data : p
-                    ))
+                    ));
                     resetForm();
+                    toast.success('Paciente actualizado exitosamente');
                 } else {
-                    setError(response.data.message || 'Failed to update patient');
+                    const errorMessage = response.data.message || 'Failed to update patient';
+                    setError(errorMessage);
+                    toast.error(errorMessage);
                 }
             } else {
                 // Create new patient
@@ -86,16 +204,21 @@ const Patients = () => {
                 if (response.data.success) {
                     setPatients([...patients, response.data.data]);
                     resetForm();
+                    toast.success('Paciente creado exitosamente');
                 } else {
-                    setError(response.data.message || 'Failed to create patient');
+                    const errorMessage = response.data.message || 'Failed to create patient';
+                    setError(errorMessage);
+                    toast.error(errorMessage);
                 }
             }
         } catch (err) {
-            setError(axios.isAxiosError(err)
+            const errorMessage = axios.isAxiosError(err)
                 ? err.response?.data?.error || err.message
-                : 'Unknown error occurred');
+                : 'Unknown error occurred';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -105,15 +228,21 @@ const Patients = () => {
         setValue('name', patient.name);
         setValue('age', patient.age);
         setValue('gender', patient.gender);
+        setValue('hypertension', patient.hypertension || false);
+        setValue('diabetes', patient.diabetes || false);
+        setValue('heart_disease', patient.heart_disease || false);
+        setValue('smoker', patient.smoker || false);
+        setValue('alcoholic', patient.alcoholic || false);
+        setShowForm(true);
     };
 
     // Handle patient deletion
     const handleDelete = async (id: string) => {
-        if (!id || !window.confirm('Are you sure you want to delete this patient?')) {
+        if (!id || !window.confirm('¿Estás seguro de que quieres eliminar este paciente?')) {
             return;
         }
 
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
 
         try {
@@ -123,15 +252,20 @@ const Patients = () => {
 
             if (response.data.success) {
                 setPatients(patients.filter(p => p.id !== id));
+                toast.success('Paciente eliminado exitosamente');
             } else {
-                setError(response.data.message || 'Failed to delete patient');
+                const errorMessage = response.data.message || 'Failed to delete patient';
+                setError(errorMessage);
+                toast.error(errorMessage);
             }
         } catch (err) {
-            setError(axios.isAxiosError(err)
+            const errorMessage = axios.isAxiosError(err)
                 ? err.response?.data?.error || err.message
-                : 'Unknown error occurred');
+                : 'Unknown error occurred';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
@@ -139,151 +273,628 @@ const Patients = () => {
     const resetForm = () => {
         reset();
         setEditingPatient(null);
+        setShowForm(false);
     };
 
-    return (
-        <div className="container mx-auto p-4">
-            <h2 className="text-2xl font-bold mb-6">
-                {editingPatient ? 'Edit Patient' : 'Add New Patient'}
-            </h2>
+    const exportToPDF = () => {
+        toast.success('Generando reporte PDF...');
+    };
 
-            {/* Error message */}
-            {error && (
-                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-                    {error}
+    const exportToExcel = () => {
+        toast.success('Exportando a Excel...');
+    };
+
+    const getRiskFactorCount = (patient: Patient) => {
+        return [patient.hypertension, patient.diabetes, patient.heart_disease, patient.smoker, patient.alcoholic]
+            .filter(Boolean).length;
+    };
+
+    const getRiskColor = (count: number) => {
+        if (count >= 3) return 'text-red-600 bg-red-50 border border-red-200';
+        if (count >= 1) return 'text-yellow-600 bg-yellow-50 border border-yellow-200';
+        return 'text-green-600 bg-green-50 border border-green-200';
+    };
+
+    if (loading && patients.length === 0) {
+        return (
+            <div className="flex justify-center items-center h-screen bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-lg">Cargando pacientes...</p>
                 </div>
-            )}
+            </div>
+        );
+    }
 
-            {/* Patient Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="mb-8 bg-white p-6 rounded-lg shadow-md">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Name</label>
-                        <input
-                            {...register('name', {
-                                required: 'Name is required',
-                                minLength: {
-                                    value: 2,
-                                    message: 'Name must be at least 2 characters'
-                                }
-                            })}
-                            className="w-full p-2 border rounded"
-                            disabled={isLoading}
-                        />
-                        {errors.name && (
-                            <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                        )}
+    if (error && patients.length === 0) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+                <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
+                    <div className="flex items-center mb-4">
+                        <ExclamationTriangleIcon className="h-8 w-8 text-red-500 mr-3" />
+                        <h3 className="text-lg font-semibold text-gray-900">Error de Conexión</h3>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Age</label>
-                        <input
-                            type="number"
-                            {...register('age', {
-                                required: 'Age is required',
-                                min: {
-                                    value: 0,
-                                    message: 'Age must be positive'
-                                },
-                                max: {
-                                    value: 120,
-                                    message: 'Age must be less than 120'
-                                }
-                            })}
-                            className="w-full p-2 border rounded"
-                            disabled={isLoading}
-                        />
-                        {errors.age && (
-                            <p className="mt-1 text-sm text-red-600">{errors.age.message}</p>
-                        )}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Gender</label>
-                        <select
-                            {...register('gender', { required: 'Gender is required' })}
-                            className="w-full p-2 border rounded"
-                            disabled={isLoading}
-                        >
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                            <option value="Unknown">Prefer not to say</option>
-                        </select>
-                        {errors.gender && (
-                            <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex space-x-3">
+                    <p className="text-gray-600 mb-6">{error}</p>
                     <button
-                        type="submit"
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-300"
-                        disabled={isLoading}
+                        onClick={() => window.location.reload()}
+                        className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
                     >
-                        {isLoading ? 'Processing...' : editingPatient ? 'Update Patient' : 'Add Patient'}
+                        Reintentar
                     </button>
+                </div>
+            </div>
+        );
+    }
 
-                    {editingPatient && (
-                        <button
-                            type="button"
-                            onClick={resetForm}
-                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </button>
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <div className="bg-white shadow-sm border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-6 py-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Gestión de Pacientes</h1>
+                            <p className="text-gray-600 mt-1">Administra la información de todos los pacientes</p>
+                        </div>
+
+                        {/* Controles del header */}
+                        <div className="flex items-center space-x-4">
+                            {/* Búsqueda */}
+                            <div className="relative">
+                                <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar paciente..."
+                                    value={filters.search}
+                                    onChange={(e) => setFilters({...filters, search: e.target.value})}
+                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64"
+                                />
+                            </div>
+
+                            {/* Filtros */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className="flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    <FunnelIcon className="w-5 h-5 mr-2" />
+                                    Filtros
+                                </button>
+
+                                {showFilters && (
+                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                        <div className="p-4">
+                                            <h3 className="font-semibold text-gray-800 mb-3">Filtros Avanzados</h3>
+
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Rango de Edad</label>
+                                                    <select
+                                                        value={filters.ageRange}
+                                                        onChange={(e) => setFilters({...filters, ageRange: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                    >
+                                                        <option value="all">Todas las edades</option>
+                                                        <option value="young">Jóvenes (30)</option>
+                                                        <option value="adult">Adultos (30-59)</option>
+                                                        <option value="senior">Mayores (60)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                                                    <select
+                                                        value={filters.gender}
+                                                        onChange={(e) => setFilters({...filters, gender: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                    >
+                                                        <option value="all">Todos los géneros</option>
+                                                        <option value="Male">Masculino</option>
+                                                        <option value="Female">Femenino</option>
+                                                        <option value="Other">Otro</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Factores de Riesgo</label>
+                                                    <select
+                                                        value={filters.riskFactors}
+                                                        onChange={(e) => setFilters({...filters, riskFactors: e.target.value})}
+                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                    >
+                                                        <option value="all">Todos</option>
+                                                        <option value="with">Con factores de riesgo</option>
+                                                        <option value="without">Sin factores de riesgo</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between mt-4 pt-3 border-t">
+                                                <button
+                                                    onClick={() => {
+                                                        setFilters({
+                                                            search: '',
+                                                            ageRange: 'all',
+                                                            gender: 'all',
+                                                            riskFactors: 'all'
+                                                        });
+                                                        setShowFilters(false);
+                                                    }}
+                                                    className="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                                >
+                                                    Limpiar
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowFilters(false)}
+                                                    className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                                                >
+                                                    Aplicar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Exportación */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowExportMenu(!showExportMenu)}
+                                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                >
+                                    <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
+                                    Exportar
+                                </button>
+
+                                {showExportMenu && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                        <div className="py-2">
+                                            <button
+                                                onClick={exportToPDF}
+                                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                                            >
+                                                Exportar a PDF
+                                            </button>
+                                            <button
+                                                onClick={exportToExcel}
+                                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                                            >
+                                                Exportar a Excel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Botón Nuevo Paciente */}
+                            {(user?.role === 'doctor' || user?.role === 'admin') && (
+                                <button
+                                    onClick={() => setShowForm(true)}
+                                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                                >
+                                    <PlusIcon className="w-5 h-5 mr-2" />
+                                    Nuevo Paciente
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-6 py-6">
+                {/* Estadísticas de resumen */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-blue-100 text-sm font-medium">Total Pacientes</p>
+                                <p className="text-3xl font-bold">{stats.total}</p>
+                            </div>
+                            <UserGroupIcon className="w-8 h-8 opacity-80" />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-purple-100 text-sm font-medium">Con Factores de Riesgo</p>
+                                <p className="text-3xl font-bold">{stats.withRiskFactors}</p>
+                            </div>
+                            <ExclamationTriangleIcon className="w-8 h-8 opacity-80" />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-red-100 text-sm font-medium">Alto Riesgo</p>
+                                <p className="text-3xl font-bold">{stats.highRisk}</p>
+                            </div>
+                            <FireIcon className="w-8 h-8 opacity-80" />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-green-100 text-sm font-medium">Hombres / Mujeres</p>
+                                <p className="text-3xl font-bold">{stats.maleCount} / {stats.femaleCount}</p>
+                            </div>
+                            <HeartIcon className="w-8 h-8 opacity-80" />
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-orange-100 text-sm font-medium">Edad Promedio</p>
+                                <p className="text-3xl font-bold">{stats.avgAge.toFixed(0)}</p>
+                            </div>
+                            <ChartBarIcon className="w-8 h-8 opacity-80" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Formulario Modal */}
+                {showForm && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-gray-900">
+                                    {editingPatient ? 'Editar Paciente' : 'Nuevo Paciente'}
+                                </h2>
+                                <button
+                                    onClick={resetForm}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <XMarkIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                                {/* Información básica */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Información Básica</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                                            <input
+                                                {...register('name', {
+                                                    required: 'El nombre es requerido',
+                                                    minLength: {
+                                                        value: 2,
+                                                        message: 'El nombre debe tener al menos 2 caracteres'
+                                                    }
+                                                })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                disabled={loading}
+                                            />
+                                            {errors.name && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Edad *</label>
+                                            <input
+                                                type="number"
+                                                {...register('age', {
+                                                    required: 'La edad es requerida',
+                                                    min: {
+                                                        value: 0,
+                                                        message: 'La edad debe ser positiva'
+                                                    },
+                                                    max: {
+                                                        value: 120,
+                                                        message: 'La edad debe ser menor a 120'
+                                                    }
+                                                })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                disabled={loading}
+                                            />
+                                            {errors.age && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.age.message}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Género *</label>
+                                            <select
+                                                {...register('gender', { required: 'El género es requerido' })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                disabled={loading}
+                                            >
+                                                <option value="">Seleccionar Género</option>
+                                                <option value="Male">Masculino</option>
+                                                <option value="Female">Femenino</option>
+                                                <option value="Other">Otro</option>
+                                                <option value="Unknown">Prefiero no decir</option>
+                                            </select>
+                                            {errors.gender && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Factores de riesgo */}
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Factores de Riesgo</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <label className="flex items-center space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                {...register('hypertension')}
+                                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                                disabled={loading}
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Hipertensión</span>
+                                        </label>
+
+                                        <label className="flex items-center space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                {...register('diabetes')}
+                                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                                disabled={loading}
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Diabetes</span>
+                                        </label>
+
+                                        <label className="flex items-center space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                {...register('heart_disease')}
+                                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                                disabled={loading}
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Enfermedad Cardíaca</span>
+                                        </label>
+
+                                        <label className="flex items-center space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                {...register('smoker')}
+                                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                                disabled={loading}
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Fumador</span>
+                                        </label>
+
+                                        <label className="flex items-center space-x-3">
+                                            <input
+                                                type="checkbox"
+                                                {...register('alcoholic')}
+                                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                                disabled={loading}
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Alcohólico</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end space-x-4 pt-4 border-t">
+                                    <button
+                                        type="button"
+                                        onClick={resetForm}
+                                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                        disabled={loading}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Procesando...' : editingPatient ? 'Actualizar Paciente' : 'Crear Paciente'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tabla de pacientes */}
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                                    <UserGroupIcon className="w-6 h-6 mr-2 text-blue-600" />
+                                    Registro de Pacientes
+                                </h2>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    Mostrando {filteredPatients.length} de {patients.length} pacientes
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {filteredPatients.length === 0 ? (
+                        <div className="text-center py-16">
+                            <UserIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron pacientes</h3>
+                            <p className="text-gray-500 mb-6">
+                                {patients.length === 0
+                                    ? 'Aún no hay pacientes registrados en el sistema.'
+                                    : 'Prueba ajustando los filtros para encontrar lo que buscas.'
+                                }
+                            </p>
+                            {(user?.role === 'doctor' || user?.role === 'admin') && patients.length === 0 && (
+                                <button
+                                    onClick={() => setShowForm(true)}
+                                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                >
+                                    <PlusIcon className="w-5 h-5 mr-2" />
+                                    Crear Primer Paciente
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edad</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Género</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factores de Riesgo</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nivel de Riesgo</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                {filteredPatients.map(patient => {
+                                    const riskCount = getRiskFactorCount(patient);
+                                    return (
+                                        <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold ${
+                                                        riskCount >= 3 ? 'bg-red-500' :
+                                                            riskCount >= 1 ? 'bg-yellow-500' : 'bg-green-500'
+                                                    }`}>
+                                                        {patient.name?.charAt(0) || 'P'}
+                                                    </div>
+                                                    <div className="ml-4">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {patient.name}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">
+                                                            ID: {patient.id}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">{patient.age} años</div>
+                                                <div className="text-xs text-gray-500">
+                                                    {patient.age < 30 ? 'Joven' : patient.age < 60 ? 'Adulto' : 'Mayor'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    patient.gender === 'Male' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                                        patient.gender === 'Female' ? 'bg-pink-100 text-pink-800 border border-pink-200' :
+                                                            'bg-gray-100 text-gray-800 border border-gray-200'
+                                                }`}>
+                                                    {patient.gender === 'Male' ? 'Masculino' :
+                                                        patient.gender === 'Female' ? 'Femenino' :
+                                                            patient.gender === 'Other' ? 'Otro' : 'No especificado'
+                                                    }
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {patient.hypertension && (
+                                                        <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 border border-purple-200">HTN</span>
+                                                    )}
+                                                    {patient.diabetes && (
+                                                        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200">DM</span>
+                                                    )}
+                                                    {patient.heart_disease && (
+                                                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 border border-red-200">CVD</span>
+                                                    )}
+                                                    {patient.smoker && (
+                                                        <span className="px-2 py-1 text-xs rounded-full bg-orange-100 text-orange-800 border border-orange-200">Fumador</span>
+                                                    )}
+                                                    {patient.alcoholic && (
+                                                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 border border-blue-200">Alcohólico</span>
+                                                    )}
+                                                    {riskCount === 0 && (
+                                                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 border border-green-200">Sin factores</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRiskColor(riskCount)}`}>
+                                                    {riskCount >= 3 ? (
+                                                        <>
+                                                            <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
+                                                            Alto Riesgo
+                                                        </>
+                                                    ) : riskCount >= 1 ? (
+                                                        <>
+                                                            <FireIcon className="w-4 h-4 mr-1" />
+                                                            Riesgo Moderado
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <ShieldCheckIcon className="w-4 h-4 mr-1" />
+                                                            Bajo Riesgo
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    {riskCount} factor{riskCount !== 1 ? 'es' : ''}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <div className="flex items-center space-x-3">
+                                                    {(user?.role === 'doctor' || user?.role === 'admin') && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleEdit(patient)}
+                                                                className="text-yellow-600 hover:text-yellow-900 transition-colors"
+                                                                title="Editar"
+                                                                disabled={loading}
+                                                            >
+                                                                <PencilIcon className="h-5 w-5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(patient.id)}
+                                                                className="text-red-600 hover:text-red-900 transition-colors"
+                                                                title="Eliminar"
+                                                                disabled={loading}
+                                                            >
+                                                                <TrashIcon className="h-5 w-5" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
-            </form>
 
-            {/* Patients List */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-xl font-semibold mb-4">Patient List</h3>
-
-                {isLoading && !patients.length ? (
-                    <p>Loading patients...</p>
-                ) : patients.length === 0 ? (
-                    <p>No patients found</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Age</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                            </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                            {patients.map(patient => (
-                                <tr key={patient.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">{patient.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{patient.age}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{patient.gender}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                                        <button
-                                            onClick={() => handleEdit(patient)}
-                                            className="text-blue-600 hover:text-blue-900"
-                                            disabled={isLoading}
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(patient.id)}
-                                            className="text-red-600 hover:text-red-900"
-                                            disabled={isLoading}
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
+                {/* Paginación (opcional) */}
+                {filteredPatients.length > 20 && (
+                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4 rounded-lg shadow">
+                        <div className="flex-1 flex justify-between sm:hidden">
+                            <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Anterior
+                            </button>
+                            <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Siguiente
+                            </button>
+                        </div>
+                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm text-gray-700">
+                                    Mostrando <span className="font-medium">1</span> a <span className="font-medium">{Math.min(20, filteredPatients.length)}</span> de{' '}
+                                    <span className="font-medium">{filteredPatients.length}</span> resultados
+                                </p>
+                            </div>
+                            <div>
+                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        Anterior
+                                    </button>
+                                    <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                        1
+                                    </button>
+                                    <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        Siguiente
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

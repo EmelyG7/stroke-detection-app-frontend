@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
     LockClosedIcon,
     EyeIcon,
@@ -13,11 +14,22 @@ import {
 import toast from 'react-hot-toast';
 import logo from '../assets/logo.svg';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+interface User {
+    id: string;
+    username: string;
+    full_name: string;
+    role: string;
+}
+
 export default function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [, setUsers] = useState<User[]>([]);
+    const [, setLoadingUsers] = useState(false);
     const { login, loading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -28,7 +40,40 @@ export default function Login() {
             setUsername(rememberedUsername);
             setRememberMe(true);
         }
+
+        // Cargar usuarios disponibles para mostrar opciones
+        loadAvailableUsers();
     }, []);
+
+    // Función loadAvailableUsers actualizada
+    const loadAvailableUsers = async () => {
+        setLoadingUsers(true);
+        try {
+            const response = await axios.get(`${API_BASE_URL}/users`);
+            if (response.data.success) {
+                setUsers(response.data.data);
+            }
+        } catch (error) {
+            console.log('No se pudieron cargar los usuarios (esto es normal si no hay conexión)');
+            // Puedes agregar usuarios mock aquí si falla la conexión
+            setUsers([
+                {
+                    id: 'mock-admin-id',
+                    username: 'admin',
+                    full_name: 'Administrador Sistema',
+                    role: 'admin'
+                },
+                {
+                    id: 'mock-doctor-id',
+                    username: 'doctor',
+                    full_name: 'Doctor Sistema',
+                    role: 'doctor'
+                }
+            ]);
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,10 +96,9 @@ export default function Login() {
             const from = location.state?.from?.pathname || '/dashboard';
             navigate(from, { replace: true });
         } catch (error) {
-            toast.error('Login failed: Invalid credentials');
+            toast.error(error instanceof Error ? error.message : 'Login failed: Invalid credentials');
         }
     };
-
     return (
         <div className="fixed inset-0 flex bg-gradient-to-br from-blue-50 to-indigo-50 overflow-auto">
             {/* Panel izquierdo - Información */}
@@ -119,7 +163,7 @@ export default function Login() {
                         </div>
 
                         <form className="space-y-7" onSubmit={handleSubmit}>
-                            {/* Campo de Usuario - Más grande */}
+                            {/* Campo de Usuario */}
                             <div className="space-y-3">
                                 <label htmlFor="username" className="block text-base font-medium text-gray-700">
                                     Username
@@ -143,7 +187,7 @@ export default function Login() {
                                 </div>
                             </div>
 
-                            {/* Campo de Contraseña - Más grande */}
+                            {/* Campo de Contraseña */}
                             <div className="space-y-3">
                                 <label htmlFor="password" className="block text-base font-medium text-gray-700">
                                     Password
@@ -212,7 +256,7 @@ export default function Login() {
                                 </div>
                             </div>
 
-                            {/* Botón de Login - Más grande */}
+                            {/* Botón de Login */}
                             <div>
                                 <button
                                     type="submit"
@@ -255,59 +299,6 @@ export default function Login() {
                             </div>
                         </form>
 
-                        {/* Demo credentials */}
-                        <div className="mt-10">
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-gray-200"></div>
-                                </div>
-                                <div className="relative flex justify-center text-sm">
-                                    <span className="px-3 bg-white text-gray-500 text-base">
-                                        Demo credentials
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 space-y-4">
-                                <button
-                                    onClick={() => {
-                                        setUsername('admin');
-                                        setPassword('admin123');
-                                    }}
-                                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all border border-gray-200 group"
-                                >
-                                    <div className="flex items-center space-x-4">
-                                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                            <UserIcon className="h-5 w-5" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-base font-medium text-gray-800">Administrator</p>
-                                            <p className="text-sm text-gray-500">Full system access</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700">Use this account</span>
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setUsername('doctor');
-                                        setPassword('doctor123');
-                                    }}
-                                    className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all border border-gray-200 group"
-                                >
-                                    <div className="flex items-center space-x-4">
-                                        <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                                            <UserIcon className="h-5 w-5" />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className="text-base font-medium text-gray-800">Doctor</p>
-                                            <p className="text-sm text-gray-500">Clinical access</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-sm font-medium text-indigo-600 group-hover:text-indigo-700">Use this account</span>
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     <div className="text-center text-sm text-gray-400 mt-8">
