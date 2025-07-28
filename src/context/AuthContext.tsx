@@ -21,23 +21,33 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        const saved = localStorage.getItem('currentUser');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch {
+                localStorage.removeItem('currentUser');
+            }
+        }
+        return null;
+    });
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     // Verificar si hay una sesión guardada al cargar la aplicación
-    useEffect(() => {
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-            try {
-                const parsedUser = JSON.parse(savedUser);
-                setUser(parsedUser);
-            } catch (error) {
-                console.error('Error parsing saved user:', error);
-                localStorage.removeItem('currentUser');
-            }
-        }
-    }, []);
+    // useEffect(() => {
+    //     const savedUser = localStorage.getItem('currentUser');
+    //     if (savedUser) {
+    //         try {
+    //             const parsedUser = JSON.parse(savedUser);
+    //             setUser(parsedUser);
+    //         } catch (error) {
+    //             console.error('Error parsing saved user:', error);
+    //             localStorage.removeItem('currentUser');
+    //         }
+    //     }
+    // }, []);
 
     const login = async (username: string, password: string) => {
         setLoading(true);

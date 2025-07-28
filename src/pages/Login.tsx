@@ -111,10 +111,10 @@ export default function Login() {
 
                         <div className="text-center space-y-4">
                             <h1 className="text-4xl font-bold text-white leading-tight">
-                                Stroke Detection <span className="text-blue-200">System</span>
+                                Sistema de Detección de Stroke  <span className="text-blue-200"></span>
                             </h1>
                             <p className="text-blue-100 text-xl leading-relaxed">
-                                Advanced AI-powered platform for stroke risk assessment
+                                Plataforma avanzada impulsada por inteligencia artificial para la evaluación del riesgo de accidente cerebrovascular
                             </p>
                         </div>
 
@@ -122,24 +122,24 @@ export default function Login() {
                             <div className="flex items-start space-x-4 p-4 bg-blue-500/20 rounded-xl backdrop-blur-sm">
                                 <ShieldCheckIcon className="h-8 w-8 text-blue-200 mt-1 flex-shrink-0" />
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white">Secure Platform</h3>
-                                    <p className="text-blue-100">HIPAA compliant data protection</p>
+                                    <h3 className="text-lg font-semibold text-white">Plataforma segura</h3>
+                                    <p className="text-blue-100">Protección de datos conforme a HIPAA</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start space-x-4 p-4 bg-blue-500/20 rounded-xl backdrop-blur-sm">
                                 <ChartBarIcon className="h-8 w-8 text-blue-200 mt-1 flex-shrink-0" />
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white">Real-time Analytics</h3>
-                                    <p className="text-blue-100">Instant risk assessment results</p>
+                                    <h3 className="text-lg font-semibold text-white">Analíticas en tiempo real</h3>
+                                    <p className="text-blue-100">Resultados instantáneos de evaluación de riesgos</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start space-x-4 p-4 bg-blue-500/20 rounded-xl backdrop-blur-sm">
                                 <HeartIcon className="h-8 w-8 text-blue-200 mt-1 flex-shrink-0" />
                                 <div>
-                                    <h3 className="text-lg font-semibold text-white">Patient Focused</h3>
-                                    <p className="text-blue-100">Personalized care plans</p>
+                                    <h3 className="text-lg font-semibold text-white">Enfoque de pacientes</h3>
+                                    <p className="text-blue-100">Planes de cuidado personalizados</p>
                                 </div>
                             </div>
                         </div>
@@ -152,21 +152,21 @@ export default function Login() {
                 <div className="w-full max-w-md mx-auto my-auto">
                     <div className="text-center lg:hidden mb-8">
                         <img src={logo} alt="Logo" className="h-20 mx-auto mb-4" />
-                        <h2 className="text-3xl font-bold text-gray-800">Stroke Detection</h2>
-                        <p className="mt-2 text-gray-600">Sign in to your account</p>
+                        <h2 className="text-3xl font-bold text-gray-800">Detección de Stroke</h2>
+                        <p className="mt-2 text-gray-600">Ingrese a su cuenta</p>
                     </div>
 
                     <div className="bg-white p-8 sm:p-10 rounded-2xl shadow-2xl border border-gray-100">
                         <div className="text-center mb-10">
-                            <h2 className="text-3xl font-bold text-gray-800">Welcome Back</h2>
-                            <p className="mt-3 text-gray-600 text-lg">Please enter your credentials</p>
+                            <h2 className="text-3xl font-bold text-gray-800">Bienvenido!</h2>
+                            <p className="mt-3 text-gray-600 text-lg">Por favor, ingrese sus credenciales</p>
                         </div>
 
                         <form className="space-y-7" onSubmit={handleSubmit}>
                             {/* Campo de Usuario */}
                             <div className="space-y-3">
                                 <label htmlFor="username" className="block text-base font-medium text-gray-700">
-                                    Username
+                                    Usuario
                                 </label>
                                 <div className="relative rounded-xl shadow-sm">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -190,7 +190,7 @@ export default function Login() {
                             {/* Campo de Contraseña */}
                             <div className="space-y-3">
                                 <label htmlFor="password" className="block text-base font-medium text-gray-700">
-                                    Password
+                                    Contraseña
                                 </label>
                                 <div className="relative rounded-xl shadow-sm">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -224,37 +224,37 @@ export default function Login() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <input
-                                        id="remember-me"
-                                        name="remember-me"
-                                        type="checkbox"
-                                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                        disabled={loading}
-                                    />
-                                    <label htmlFor="remember-me" className="ml-3 block text-base text-gray-700">
-                                        Remember me
-                                    </label>
-                                </div>
+                            {/*<div className="flex items-center justify-between">*/}
+                            {/*    <div className="flex items-center">*/}
+                            {/*        <input*/}
+                            {/*            id="remember-me"*/}
+                            {/*            name="remember-me"*/}
+                            {/*            type="checkbox"*/}
+                            {/*            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"*/}
+                            {/*            checked={rememberMe}*/}
+                            {/*            onChange={(e) => setRememberMe(e.target.checked)}*/}
+                            {/*            disabled={loading}*/}
+                            {/*        />*/}
+                            {/*        <label htmlFor="remember-me" className="ml-3 block text-base text-gray-700">*/}
+                            {/*            Remember me*/}
+                            {/*        </label>*/}
+                            {/*    </div>*/}
 
-                                <div className="text-base">
-                                    <a
-                                        href="#"
-                                        className="font-medium text-blue-600 hover:text-blue-500"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            toast('Please contact your system administrator', {
-                                                icon: 'ℹ️',
-                                            });
-                                        }}
-                                    >
-                                        Forgot password?
-                                    </a>
-                                </div>
-                            </div>
+                            {/*    <div className="text-base">*/}
+                            {/*        <a*/}
+                            {/*            href="#"*/}
+                            {/*            className="font-medium text-blue-600 hover:text-blue-500"*/}
+                            {/*            onClick={(e) => {*/}
+                            {/*                e.preventDefault();*/}
+                            {/*                toast('Please contact your system administrator', {*/}
+                            {/*                    icon: 'ℹ️',*/}
+                            {/*                });*/}
+                            {/*            }}*/}
+                            {/*        >*/}
+                            {/*            Forgot password?*/}
+                            {/*        </a>*/}
+                            {/*    </div>*/}
+                            {/*</div>*/}
 
                             {/* Botón de Login */}
                             <div>
@@ -287,12 +287,12 @@ export default function Login() {
                                                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                                 ></path>
                                             </svg>
-                                            Signing in...
+                                            Ingresando...
                                         </>
                                     ) : (
                                         <>
                                             <LockClosedIcon className="h-6 w-6 mr-3" />
-                                            Sign in
+                                            Ingresar
                                         </>
                                     )}
                                 </button>
