@@ -1,4 +1,4 @@
-import { createContext, useState, type ReactNode, useContext, useEffect } from 'react';
+import { createContext, useState, type ReactNode, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
