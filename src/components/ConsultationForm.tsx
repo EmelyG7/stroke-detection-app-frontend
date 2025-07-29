@@ -285,7 +285,7 @@ export default function ConsultationForm() {
                     <div className="flex items-center justify-between">
                         <button
                             onClick={() => navigate('/consultations')}
-                            className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group"
+                            className="flex items-center px-4 py-2 bg-gray-100 text-blue-600 hover:bg-gray-200 hover:text-blue-800 rounded-lg transition-colors group"
                         >
                             <ArrowLeftIcon className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform" />
                             Volver a Consultas
@@ -331,14 +331,14 @@ export default function ConsultationForm() {
                                 <select
                                     name="patient_id"
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                                     value={formData.patient_id}
                                     onChange={handleChange}
                                     disabled={isEditing}
                                 >
-                                    <option value="">Seleccionar paciente...</option>
+                                    <option value="" className="text-gray-500">Seleccionar paciente...</option>
                                     {patients.map(patient => (
-                                        <option key={patient.id} value={patient.id}>
+                                        <option key={patient.id} value={patient.id} className="text-gray-900">
                                             {patient.name}
                                         </option>
                                     ))}
@@ -360,7 +360,7 @@ export default function ConsultationForm() {
                                     type="date"
                                     name="date"
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                                     value={formData.date}
                                     onChange={handleChange}
                                 />
@@ -376,7 +376,7 @@ export default function ConsultationForm() {
                             <textarea
                                 name="notes"
                                 rows={4}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none bg-white text-gray-900 placeholder-gray-500"
                                 placeholder="Escriba observaciones, diagnósticos preliminares, tratamientos recomendados..."
                                 value={formData.notes}
                                 onChange={handleChange}

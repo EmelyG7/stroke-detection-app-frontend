@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {useContext, useEffect, useState} from 'react';
 import { AuthContext } from '../context/AuthContext';
 import {Bars3Icon, LockClosedIcon, XMarkIcon, ChevronDownIcon} from '@heroicons/react/24/outline';
+import logo from '../assets/logo.svg';
 
 const Layout = () => {
     const authContext = useContext(AuthContext);
@@ -52,10 +53,12 @@ const Layout = () => {
                                 to="/dashboard"
                                 className="flex items-center space-x-3 group"
                             >
-                                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-600 group-hover:bg-blue-700 transition-colors">
-                                    <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-7.536 5.879a1 1 0 001.415 0 3 3 0 014.242 0 1 1 0 001.415-1.415 5 5 0 00-7.072 0 1 1 0 000 1.415z" clipRule="evenodd" />
-                                    </svg>
+                                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-r from-white-600 to-gray-600 group-hover:bg-700 transition-colors p-1">
+                                    <img
+                                        src={logo}
+                                        alt="Logo Detección de Stroke"
+                                        className="h-8 w-8 object-contain"
+                                    />
                                 </div>
                                 <span className="text-2xl font-bold text-gray-800 hidden sm:inline">Detección de Stroke</span>
                             </NavLink>
@@ -121,7 +124,7 @@ const Layout = () => {
                                 <div className="relative">
                                     <button
                                         onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                        className="flex items-center space-x-2 focus:outline-none group"
+                                        className="flex bg-white items-center space-x-2 focus:outline-none group"
                                     >
                                         <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm">
                                             <span className="text-lg font-semibold text-white">
@@ -149,7 +152,7 @@ const Layout = () => {
                                                 </div>
                                                 <button
                                                     onClick={handleLogout}
-                                                    className="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center"
+                                                    className="w-full text-left bg-white px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center"
                                                 >
                                                     <LockClosedIcon className="h-5 w-5 mr-2" />
                                                     Sign out

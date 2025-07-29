@@ -276,12 +276,380 @@ const Patients = () => {
         setShowForm(false);
     };
 
-    const exportToPDF = () => {
-        toast.success('Generando reporte PDF...');
+// Reemplaza las funciones exportToPDF y exportToExcel existentes en tu componente Patients
+
+    const exportToPDF = async () => {
+        try {
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <title>Reporte de Pacientes - Stroke Diagnosis System</title>
+                <style>
+                    body { 
+                        font-family: Arial, sans-serif; 
+                        margin: 20px; 
+                        color: #333;
+                    }
+                    .header { 
+                        text-align: center; 
+                        margin-bottom: 30px; 
+                        border-bottom: 2px solid #4F46E5;
+                        padding-bottom: 20px;
+                    }
+                    .logo {
+                        color: #4F46E5;
+                        font-size: 24px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                    }
+                    .stats-grid { 
+                        display: grid; 
+                        grid-template-columns: repeat(5, 1fr); 
+                        gap: 15px; 
+                        margin-bottom: 30px; 
+                    }
+                    .stat-card { 
+                        border: 1px solid #E5E7EB; 
+                        padding: 15px; 
+                        border-radius: 8px; 
+                        text-align: center;
+                        background-color: #F9FAFB;
+                    }
+                    .stat-title {
+                        font-size: 12px;
+                        color: #6B7280;
+                        margin-bottom: 5px;
+                        font-weight: 500;
+                    }
+                    .stat-value {
+                        font-size: 24px;
+                        font-weight: bold;
+                        color: #1F2937;
+                    }
+                    .table { 
+                        width: 100%; 
+                        border-collapse: collapse; 
+                        margin-top: 20px; 
+                        font-size: 12px;
+                    }
+                    .table th, .table td { 
+                        border: 1px solid #E5E7EB; 
+                        padding: 8px; 
+                        text-align: left; 
+                    }
+                    .table th { 
+                        background-color: #F3F4F6; 
+                        font-weight: 600;
+                        color: #374151;
+                    }
+                    .table tbody tr:nth-child(even) {
+                        background-color: #F9FAFB;
+                    }
+                    .risk-badge {
+                        padding: 4px 8px;
+                        border-radius: 12px;
+                        font-size: 10px;
+                        font-weight: 600;
+                        text-align: center;
+                        display: inline-block;
+                        min-width: 60px;
+                    }
+                    .risk-high { background-color: #FEE2E2; color: #DC2626; }
+                    .risk-medium { background-color: #FEF3C7; color: #D97706; }
+                    .risk-low { background-color: #D1FAE5; color: #059669; }
+                    .gender-badge {
+                        padding: 2px 6px;
+                        border-radius: 8px;
+                        font-size: 10px;
+                        font-weight: 500;
+                    }
+                    .gender-male { background-color: #DBEAFE; color: #1D4ED8; }
+                    .gender-female { background-color: #FCE7F3; color: #BE185D; }
+                    .gender-other { background-color: #F3F4F6; color: #374151; }
+                    .risk-factors {
+                        font-size: 10px;
+                    }
+                    .risk-factor {
+                        display: inline-block;
+                        padding: 2px 4px;
+                        margin: 1px;
+                        border-radius: 4px;
+                        background-color: #E5E7EB;
+                        color: #374151;
+                    }
+                    .footer {
+                        margin-top: 30px;
+                        padding-top: 20px;
+                        border-top: 1px solid #E5E7EB;
+                        text-align: center;
+                        font-size: 12px;
+                        color: #6B7280;
+                    }
+                    .filters-applied {
+                        background-color: #EEF2FF;
+                        padding: 10px;
+                        border-radius: 6px;
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    @media print {
+                        body { margin: 0; }
+                        .header { page-break-after: avoid; }
+                        .table { page-break-inside: avoid; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="logo">🏥 Sistema de Diagnóstico de Stroke</div>
+                    <h1>Reporte de Gestión de Pacientes</h1>
+                    <p>Generado el ${new Date().toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}</p>
+                </div>
+
+                ${(filters.search || filters.ageRange !== 'all' || filters.gender !== 'all' || filters.riskFactors !== 'all') ? `
+                <div class="filters-applied">
+                    <strong>Filtros Aplicados:</strong>
+                    ${filters.search ? `Búsqueda: "${filters.search}" | ` : ''}
+                    ${filters.ageRange !== 'all' ? `Edad: ${
+                filters.ageRange === 'young' ? 'Jóvenes (<30)' :
+                    filters.ageRange === 'adult' ? 'Adultos (30-59)' :
+                        filters.ageRange === 'senior' ? 'Mayores (≥60)' : filters.ageRange
+            } | ` : ''}
+                    ${filters.gender !== 'all' ? `Género: ${filters.gender} | ` : ''}
+                    ${filters.riskFactors !== 'all' ? `Factores de Riesgo: ${
+                filters.riskFactors === 'with' ? 'Con factores' : 'Sin factores'
+            }` : ''}
+                </div>
+                ` : ''}
+                
+                <h2>Estadísticas Generales</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">Total Pacientes</div>
+                        <div class="stat-value">${stats.total}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Con Factores de Riesgo</div>
+                        <div class="stat-value">${stats.withRiskFactors}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Alto Riesgo</div>
+                        <div class="stat-value">${stats.highRisk}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Distribución M/F</div>
+                        <div class="stat-value">${stats.maleCount}/${stats.femaleCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title">Edad Promedio</div>
+                        <div class="stat-value">${stats.avgAge.toFixed(0)} años</div>
+                    </div>
+                </div>
+
+                <h2>Listado de Pacientes (${filteredPatients.length} registros)</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Edad</th>
+                            <th>Género</th>
+                            <th>Factores de Riesgo</th>
+                            <th>Nivel de Riesgo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredPatients.map(patient => {
+                const riskCount = getRiskFactorCount(patient);
+                const riskFactors = [];
+                if (patient.hypertension) riskFactors.push('HTN');
+                if (patient.diabetes) riskFactors.push('DM');
+                if (patient.heart_disease) riskFactors.push('CVD');
+                if (patient.smoker) riskFactors.push('Fumador');
+                if (patient.alcoholic) riskFactors.push('Alcohólico');
+
+                return `
+                                <tr>
+                                    <td>${patient.id}</td>
+                                    <td>${patient.name || 'N/A'}</td>
+                                    <td>${patient.age} años</td>
+                                    <td>
+                                        <span class="gender-badge ${
+                    patient.gender === 'Male' ? 'gender-male' :
+                        patient.gender === 'Female' ? 'gender-female' : 'gender-other'
+                }">
+                                            ${patient.gender === 'Male' ? 'Masculino' :
+                    patient.gender === 'Female' ? 'Femenino' :
+                        patient.gender === 'Other' ? 'Otro' : 'No especificado'}
+                                        </span>
+                                    </td>
+                                    <td class="risk-factors">
+                                        ${riskFactors.length > 0 ?
+                    riskFactors.map(factor => `<span class="risk-factor">${factor}</span>`).join(' ') :
+                    '<span class="risk-factor">Sin factores</span>'
+                }
+                                    </td>
+                                    <td>
+                                        <span class="risk-badge ${
+                    riskCount >= 3 ? 'risk-high' :
+                        riskCount >= 1 ? 'risk-medium' : 'risk-low'
+                }">
+                                            ${riskCount >= 3 ? 'Alto Riesgo' :
+                    riskCount >= 1 ? 'Riesgo Moderado' : 'Bajo Riesgo'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+            }).join('')}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <p><strong>Sistema de Diagnóstico de Stroke</strong></p>
+                    <p>Reporte generado automáticamente | Confidencial - Solo para uso médico</p>
+                </div>
+            </body>
+            </html>
+        `;
+
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.open();
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
+            }
+
+            setShowExportMenu(false);
+            toast.success('Reporte PDF generado exitosamente');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            toast.error('Error al generar el PDF. Por favor, intenta nuevamente.');
+        }
     };
 
     const exportToExcel = () => {
-        toast.success('Exportando a Excel...');
+        try {
+            const csvData = [
+                ['REPORTE DE GESTIÓN DE PACIENTES - SISTEMA DE DIAGNÓSTICO DE STROKE'],
+                ['Generado el:', new Date().toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })],
+                [''],
+                ['FILTROS APLICADOS:'],
+                ...(filters.search || filters.ageRange !== 'all' || filters.gender !== 'all' || filters.riskFactors !== 'all' ? [
+                    ['Búsqueda:', filters.search || 'N/A'],
+                    ['Rango de Edad:', filters.ageRange === 'all' ? 'Todas las edades' :
+                        filters.ageRange === 'young' ? 'Jóvenes (<30)' :
+                            filters.ageRange === 'adult' ? 'Adultos (30-59)' :
+                                filters.ageRange === 'senior' ? 'Mayores (≥60)' : filters.ageRange],
+                    ['Género:', filters.gender === 'all' ? 'Todos los géneros' : filters.gender],
+                    ['Factores de Riesgo:', filters.riskFactors === 'all' ? 'Todos' :
+                        filters.riskFactors === 'with' ? 'Con factores de riesgo' : 'Sin factores de riesgo'],
+                ] : [
+                    ['No se aplicaron filtros']
+                ]),
+                [''],
+                ['ESTADÍSTICAS GENERALES'],
+                ['Métrica', 'Valor'],
+                ['Total de Pacientes', stats.total],
+                ['Pacientes con Factores de Riesgo', stats.withRiskFactors],
+                ['Pacientes de Alto Riesgo', stats.highRisk],
+                ['Pacientes Masculinos', stats.maleCount],
+                ['Pacientes Femeninos', stats.femaleCount],
+                ['Edad Promedio', `${stats.avgAge.toFixed(1)} años`],
+                ['Porcentaje con Factores de Riesgo', `${stats.total > 0 ? ((stats.withRiskFactors / stats.total) * 100).toFixed(1) : 0}%`],
+                [''],
+                ['LISTADO DETALLADO DE PACIENTES'],
+                ['ID', 'Nombre', 'Edad', 'Género', 'Hipertensión', 'Diabetes', 'Enfermedad Cardíaca', 'Fumador', 'Alcohólico', 'Factores de Riesgo (Total)', 'Nivel de Riesgo'],
+                ...filteredPatients.map(patient => {
+                    const riskCount = getRiskFactorCount(patient);
+                    return [
+                        patient.id,
+                        patient.name || 'N/A',
+                        patient.age,
+                        patient.gender === 'Male' ? 'Masculino' :
+                            patient.gender === 'Female' ? 'Femenino' :
+                                patient.gender === 'Other' ? 'Otro' : 'No especificado',
+                        patient.hypertension ? 'Sí' : 'No',
+                        patient.diabetes ? 'Sí' : 'No',
+                        patient.heart_disease ? 'Sí' : 'No',
+                        patient.smoker ? 'Sí' : 'No',
+                        patient.alcoholic ? 'Sí' : 'No',
+                        riskCount,
+                        riskCount >= 3 ? 'Alto Riesgo' :
+                            riskCount >= 1 ? 'Riesgo Moderado' : 'Bajo Riesgo'
+                    ];
+                }),
+                [''],
+                ['RESUMEN POR CATEGORÍAS'],
+                ['Categoría', 'Cantidad', 'Porcentaje'],
+                ['Pacientes sin factores de riesgo', stats.total - stats.withRiskFactors, `${stats.total > 0 ? (((stats.total - stats.withRiskFactors) / stats.total) * 100).toFixed(1) : 0}%`],
+                ['Pacientes con 1-2 factores de riesgo', stats.withRiskFactors - stats.highRisk, `${stats.total > 0 ? (((stats.withRiskFactors - stats.highRisk) / stats.total) * 100).toFixed(1) : 0}%`],
+                ['Pacientes con 3+ factores de riesgo (Alto Riesgo)', stats.highRisk, `${stats.total > 0 ? ((stats.highRisk / stats.total) * 100).toFixed(1) : 0}%`],
+                [''],
+                ['DISTRIBUCIÓN POR EDAD'],
+                ['Grupo de Edad', 'Cantidad', 'Porcentaje'],
+                ['Jóvenes (<30 años)', patients.filter(p => p.age < 30).length, `${stats.total > 0 ? ((patients.filter(p => p.age < 30).length / stats.total) * 100).toFixed(1) : 0}%`],
+                ['Adultos (30-59 años)', patients.filter(p => p.age >= 30 && p.age < 60).length, `${stats.total > 0 ? ((patients.filter(p => p.age >= 30 && p.age < 60).length / stats.total) * 100).toFixed(1) : 0}%`],
+                ['Mayores (≥60 años)', patients.filter(p => p.age >= 60).length, `${stats.total > 0 ? ((patients.filter(p => p.age >= 60).length / stats.total) * 100).toFixed(1) : 0}%`],
+                [''],
+                ['NOTAS:'],
+                ['- Alto Riesgo: 3 o más factores de riesgo'],
+                ['- Riesgo Moderado: 1-2 factores de riesgo'],
+                ['- Bajo Riesgo: Sin factores de riesgo'],
+                ['- HTN: Hipertensión, DM: Diabetes, CVD: Enfermedad Cardiovascular'],
+                [''],
+                ['Reporte generado automáticamente por el Sistema de Diagnóstico de Stroke'],
+                ['Confidencial - Solo para uso médico autorizado']
+            ];
+
+            const csvContent = csvData.map(row =>
+                row.map(cell => {
+                    // Escapar comillas dobles y envolver en comillas si contiene comas, saltos de línea o comillas
+                    const cellStr = String(cell);
+                    if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+                        return `"${cellStr.replace(/"/g, '""')}"`;
+                    }
+                    return cellStr;
+                }).join(',')
+            ).join('\n');
+
+            // Crear y descargar el archivo
+            const blob = new Blob(['\ufeff' + csvContent], {
+                type: 'text/csv;charset=utf-8;'
+            });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `pacientes_reporte_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setShowExportMenu(false);
+            toast.success('Archivo Excel exportado exitosamente');
+        } catch (error) {
+            console.error('Error generating Excel:', error);
+            toast.error('Error al generar el archivo Excel. Por favor, intenta nuevamente.');
+        }
     };
 
     const getRiskFactorCount = (patient: Patient) => {
@@ -347,7 +715,7 @@ const Patients = () => {
                                     placeholder="Buscar paciente..."
                                     value={filters.search}
                                     onChange={(e) => setFilters({...filters, search: e.target.value})}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64"
+                                    className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64 text-gray-900 placeholder-gray-500"
                                 />
                             </div>
 
@@ -372,7 +740,7 @@ const Patients = () => {
                                                     <select
                                                         value={filters.ageRange}
                                                         onChange={(e) => setFilters({...filters, ageRange: e.target.value})}
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                     >
                                                         <option value="all">Todas las edades</option>
                                                         <option value="young">Jóvenes (30)</option>
@@ -386,7 +754,7 @@ const Patients = () => {
                                                     <select
                                                         value={filters.gender}
                                                         onChange={(e) => setFilters({...filters, gender: e.target.value})}
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                     >
                                                         <option value="all">Todos los géneros</option>
                                                         <option value="Male">Masculino</option>
@@ -400,7 +768,7 @@ const Patients = () => {
                                                     <select
                                                         value={filters.riskFactors}
                                                         onChange={(e) => setFilters({...filters, riskFactors: e.target.value})}
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                     >
                                                         <option value="all">Todos</option>
                                                         <option value="with">Con factores de riesgo</option>
@@ -420,7 +788,7 @@ const Patients = () => {
                                                         });
                                                         setShowFilters(false);
                                                     }}
-                                                    className="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                                    className="px-3 py-2 bg-white text-gray-600 hover:text-gray-800 transition-colors"
                                                 >
                                                     Limpiar
                                                 </button>
@@ -451,13 +819,13 @@ const Patients = () => {
                                         <div className="py-2">
                                             <button
                                                 onClick={exportToPDF}
-                                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className="block w-full text-left bg-white px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                                             >
                                                 Exportar a PDF
                                             </button>
                                             <button
                                                 onClick={exportToExcel}
-                                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className="block w-full text-left bg-white px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                                             >
                                                 Exportar a Excel
                                             </button>
@@ -566,7 +934,7 @@ const Patients = () => {
                                                         message: 'El nombre debe tener al menos 2 caracteres'
                                                     }
                                                 })}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                 disabled={loading}
                                             />
                                             {errors.name && (
@@ -589,7 +957,7 @@ const Patients = () => {
                                                         message: 'La edad debe ser menor a 120'
                                                     }
                                                 })}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                 disabled={loading}
                                             />
                                             {errors.age && (
@@ -601,7 +969,7 @@ const Patients = () => {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Género *</label>
                                             <select
                                                 {...register('gender', { required: 'El género es requerido' })}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                 disabled={loading}
                                             >
                                                 <option value="">Seleccionar Género</option>
@@ -836,7 +1204,7 @@ const Patients = () => {
                                                         <>
                                                             <button
                                                                 onClick={() => handleEdit(patient)}
-                                                                className="text-yellow-600 hover:text-yellow-900 transition-colors"
+                                                                className="bg-white text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 p-2 rounded-lg border border-gray-200 transition-colors shadow-sm"
                                                                 title="Editar"
                                                                 disabled={loading}
                                                             >
@@ -844,7 +1212,7 @@ const Patients = () => {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleDelete(patient.id)}
-                                                                className="text-red-600 hover:text-red-900 transition-colors"
+                                                                className="bg-white text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg border border-gray-200 transition-colors shadow-sm"
                                                                 title="Eliminar"
                                                                 disabled={loading}
                                                             >

@@ -9,7 +9,6 @@ import {
     TrashIcon,
     FunnelIcon,
     MagnifyingGlassIcon,
-    ArrowDownTrayIcon,
     XMarkIcon,
     UserIcon,
     ExclamationTriangleIcon,
@@ -48,7 +47,6 @@ const UserManagement = () => {
     const [error, setError] = useState<string | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
-    const [showExportMenu, setShowExportMenu] = useState(false);
     const { user: currentUser } = useAuth();
 
     const [filters, setFilters] = useState<FilterState>({
@@ -237,16 +235,6 @@ const UserManagement = () => {
         setShowForm(false);
     };
 
-    const exportToPDF = () => {
-        toast.success('Generando reporte PDF...');
-        setShowExportMenu(false);
-    };
-
-    const exportToExcel = () => {
-        toast.success('Exportando a Excel...');
-        setShowExportMenu(false);
-    };
-
     const getRoleColor = (role: string) => {
         switch (role) {
             case 'admin': return 'bg-purple-100 text-purple-800 border border-purple-200';
@@ -315,7 +303,7 @@ const UserManagement = () => {
                                     placeholder="Buscar usuarios..."
                                     value={filters.search}
                                     onChange={(e) => setFilters({...filters, search: e.target.value})}
-                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64"
+                                    className="pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent w-64"
                                 />
                             </div>
 
@@ -340,7 +328,7 @@ const UserManagement = () => {
                                                     <select
                                                         value={filters.role}
                                                         onChange={(e) => setFilters({...filters, role: e.target.value})}
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                                                     >
                                                         <option value="all">Todos los roles</option>
                                                         <option value="admin">Administrador</option>
@@ -358,7 +346,7 @@ const UserManagement = () => {
                                                         });
                                                         setShowFilters(false);
                                                     }}
-                                                    className="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                                    className="px-3 py-2 bg-white text-gray-600 hover:text-gray-800 transition-colors"
                                                 >
                                                     Limpiar
                                                 </button>
@@ -369,36 +357,6 @@ const UserManagement = () => {
                                                     Aplicar
                                                 </button>
                                             </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Export */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowExportMenu(!showExportMenu)}
-                                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                >
-                                    <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
-                                    Exportar
-                                </button>
-
-                                {showExportMenu && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                                        <div className="py-2">
-                                            <button
-                                                onClick={exportToPDF}
-                                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
-                                            >
-                                                Exportar a PDF
-                                            </button>
-                                            <button
-                                                onClick={exportToExcel}
-                                                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
-                                            >
-                                                Exportar a Excel
-                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -473,7 +431,7 @@ const UserManagement = () => {
                                 </h2>
                                 <button
                                     onClick={resetForm}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                    className="text-gray-400 bg-white hover:text-gray-600 transition-colors"
                                 >
                                     <XMarkIcon className="w-6 h-6" />
                                 </button>
@@ -494,7 +452,7 @@ const UserManagement = () => {
                                                         message: 'El nombre de usuario debe tener al menos 3 caracteres'
                                                     }
                                                 })}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none bg-white text-gray-900 placeholder-gray-500"
                                                 disabled={loading || !!editingUser}
                                             />
                                             {errors.username && (
@@ -512,7 +470,7 @@ const UserManagement = () => {
                                                         message: 'El nombre completo debe tener al menos 2 caracteres'
                                                     }
                                                 })}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none bg-white text-gray-900 placeholder-gray-500"
                                                 disabled={loading}
                                             />
                                             {errors.full_name && (
@@ -524,7 +482,7 @@ const UserManagement = () => {
                                             <label className="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
                                             <select
                                                 {...register('role', { required: 'El rol es requerido' })}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                                                 disabled={loading || Boolean(editingUser && currentUser?.id === editingUser.id)}                                            >
                                                 <option value="">Seleccionar Rol</option>
                                                 <option value="admin">Administrador</option>
@@ -547,7 +505,7 @@ const UserManagement = () => {
                                                             message: 'La contraseña debe tener al menos 6 caracteres'
                                                         }
                                                     })}
-                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none bg-white text-gray-900 placeholder-gray-500"
                                                     disabled={loading}
                                                 />
                                                 {errors.password && (
@@ -562,7 +520,7 @@ const UserManagement = () => {
                                     <button
                                         type="button"
                                         onClick={resetForm}
-                                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                                        className="px-6 py-2 border bg-white border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                         disabled={loading}
                                     >
                                         Cancelar
@@ -671,7 +629,7 @@ const UserManagement = () => {
                                                 {(currentUser?.role === 'admin' || currentUser?.id === user.id) && (
                                                     <button
                                                         onClick={() => handleEdit(user)}
-                                                        className="text-yellow-600 hover:text-yellow-900 transition-colors"
+                                                        className="text-yellow-600 bg-white hover:text-yellow-900 transition-colors"
                                                         title="Editar"
                                                         disabled={loading}
                                                     >
@@ -681,7 +639,7 @@ const UserManagement = () => {
                                                 {currentUser?.role === 'admin' && (
                                                     <button
                                                         onClick={() => handleDelete(user.id)}
-                                                        className="text-red-600 hover:text-red-900 transition-colors"
+                                                        className="text-red-600 bg-white hover:text-red-900 transition-colors"
                                                         title="Eliminar"
                                                         disabled={loading}
                                                     >
