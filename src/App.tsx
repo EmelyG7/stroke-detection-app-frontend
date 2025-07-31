@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './components/Dashboard';
 import Patients from './components/Patients';
+import PatientDetail from "./components/PatientDetail.tsx";
 import Consultations from './components/Consultations';
 import ConsultationForm from './components/ConsultationForm';
 import ConsultationDetail from './components/ConsultationDetail';
@@ -44,11 +45,20 @@ function App() {
                             <Dashboard />
                         </ProtectedRoute>
                     } />
-                    <Route path="patients" element={
+
+                    <Route path="patients">
+                        <Route index element={
                         <ProtectedRoute>
                             <Patients />
-                        </ProtectedRoute>
-                    } />
+                        </ProtectedRoute> } />
+
+                        <Route path=":id" element={
+                            <ProtectedRoute>
+                                <PatientDetail />
+                            </ProtectedRoute>
+                        } />
+                    </Route>
+
                     <Route path="consultations">
                         <Route index element={
                             <ProtectedRoute>

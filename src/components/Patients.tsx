@@ -16,10 +16,11 @@ import {
     HeartIcon,
     FireIcon,
     ShieldCheckIcon,
-    ChartBarIcon
+    ChartBarIcon, EyeIcon, DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import type { Patient } from '../types';
+import {Link} from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -1200,6 +1201,20 @@ const Patients = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex items-center space-x-3">
+                                                    <Link
+                                                        to={`/patients/${patient.id}`}
+                                                        className="bg-white text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg border border-gray-200 transition-colors shadow-sm"
+                                                        title="Ver perfil completo"
+                                                    >
+                                                        <EyeIcon className="h-5 w-5" />
+                                                    </Link>
+                                                    <Link
+                                                        to={`/consultations/new?patient_id=${patient.id}&return=%2Fpatients`}
+                                                        className="bg-white text-green-600 hover:text-green-900 hover:bg-green-50 p-2 rounded-lg border border-gray-200 transition-colors shadow-sm"
+                                                        title="Nueva consulta"
+                                                    >
+                                                        <DocumentTextIcon className="h-5 w-5" />
+                                                    </Link>
                                                     {(user?.role === 'doctor' || user?.role === 'admin') && (
                                                         <>
                                                             <button

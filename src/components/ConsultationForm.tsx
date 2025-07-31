@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
     CloudArrowUpIcon,
@@ -40,10 +40,17 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 export default function ConsultationForm() {
     const { id } = useParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+
+    // Obtener parámetros de la URL
+    const preselectedPatientId = searchParams.get('patient_id');
+    const returnPath = searchParams.get('return') || '/consultations';
+
     const [patients, setPatients] = useState<Patient[]>([]);
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
     const [formData, setFormData] = useState<ConsultationFormData>({
-        patient_id: '',
+        patient_id: preselectedPatientId || '',
         date: new Date().toISOString().split('T')[0],
         notes: ''
     });
@@ -65,13 +72,30 @@ export default function ConsultationForm() {
                     const apiResponse = response.data as ApiResponse<Patient[]>;
                     if (apiResponse.success && Array.isArray(apiResponse.data)) {
                         setPatients(apiResponse.data);
+
+                        // Si hay un paciente preseleccionado, encontrarlo y establecerlo
+                        if (preselectedPatientId) {
+                            const patient = apiResponse.data.find(p => p.id === preselectedPatientId);
+                            if (patient) {
+                                setSelectedPatient(patient);
+                            }
+                        }
                     } else {
                         console.error('API returned unsuccessful response or invalid data structure');
                         toast.error(apiResponse.message || 'Error loading patients');
                     }
                 } else if (Array.isArray(response.data)) {
                     // Handle direct array response (fallback for different API versions)
-                    setPatients(response.data as Patient[]);
+                    const patientsData = response.data as Patient[];
+                    setPatients(patientsData);
+
+                    // Si hay un paciente preseleccionado, encontrarlo y establecerlo
+                    if (preselectedPatientId) {
+                        const patient = patientsData.find(p => p.id === preselectedPatientId);
+                        if (patient) {
+                            setSelectedPatient(patient);
+                        }
+                    }
                 } else {
                     console.error('Unexpected response structure:', response.data);
                     toast.error('Unexpected response format from server');
@@ -127,11 +151,17 @@ export default function ConsultationForm() {
             };
             fetchConsultation();
         }
-    }, [id, navigate]);
+    }, [id, navigate, preselectedPatientId]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+
+        // Si se cambia el paciente, actualizar el paciente seleccionado
+        if (name === 'patient_id') {
+            const patient = patients.find(p => p.id === value);
+            setSelectedPatient(patient || null);
+        }
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,6 +185,21 @@ export default function ConsultationForm() {
 
     const removeImage = (index: number) => {
         setImages(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleGoBack = () => {
+        navigate(returnPath);
+    };
+
+    const getReturnButtonText = () => {
+        switch (returnPath) {
+            case '/patients':
+                return 'Volver a Pacientes';
+            case returnPath.startsWith('/patients/') ? returnPath : '':
+                return 'Volver a Detalles del Paciente';
+            default:
+                return 'Volver a Consultas';
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -223,8 +268,8 @@ export default function ConsultationForm() {
                 toast.success('Consultation created successfully');
             }
 
-            // Navigate back to consultations list
-            navigate('/consultations');
+            // Navigate back to the original page
+            navigate(returnPath);
 
         } catch (error) {
             console.error('Error submitting consultation:', error);
@@ -284,11 +329,11 @@ export default function ConsultationForm() {
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <button
-                            onClick={() => navigate('/consultations')}
+                            onClick={handleGoBack}
                             className="flex items-center px-4 py-2 bg-gray-100 text-blue-600 hover:bg-gray-200 hover:text-blue-800 rounded-lg transition-colors group"
                         >
                             <ArrowLeftIcon className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform" />
-                            Volver a Consultas
+                            {getReturnButtonText()}
                         </button>
 
                         <div className="text-center">
@@ -299,6 +344,11 @@ export default function ConsultationForm() {
                             <p className="text-gray-600 mt-1">
                                 {isEditing ? 'Modifica los datos de la consulta existente' : 'Registra una nueva evaluación médica'}
                             </p>
+                            {selectedPatient && (
+                                <p className="text-sm text-blue-600 mt-1 font-medium">
+                                    Paciente: {selectedPatient.name}
+                                </p>
+                            )}
                         </div>
 
                         <div className="w-24"></div> {/* Spacer for centering */}
@@ -328,21 +378,35 @@ export default function ConsultationForm() {
                                     <UserIcon className="w-4 h-4 mr-2 text-blue-600" />
                                     Paciente *
                                 </label>
-                                <select
-                                    name="patient_id"
-                                    required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
-                                    value={formData.patient_id}
-                                    onChange={handleChange}
-                                    disabled={isEditing}
-                                >
-                                    <option value="" className="text-gray-500">Seleccionar paciente...</option>
-                                    {patients.map(patient => (
-                                        <option key={patient.id} value={patient.id} className="text-gray-900">
-                                            {patient.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                {preselectedPatientId && selectedPatient ? (
+                                    // Mostrar paciente preseleccionado como solo lectura
+                                    <div className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-gray-50 text-gray-900">
+                                        <div className="flex items-center">
+                                            <UserIcon className="w-5 h-5 text-gray-400 mr-2" />
+                                            <span className="font-medium">{selectedPatient.name}</span>
+                                            <span className="ml-2 text-xs text-gray-500 bg-blue-100 px-2 py-1 rounded-full">
+                                                Preseleccionado
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // Selector normal de paciente
+                                    <select
+                                        name="patient_id"
+                                        required
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
+                                        value={formData.patient_id}
+                                        onChange={handleChange}
+                                        disabled={isEditing}
+                                    >
+                                        <option value="" className="text-gray-500">Seleccionar paciente...</option>
+                                        {patients.map(patient => (
+                                            <option key={patient.id} value={patient.id} className="text-gray-900">
+                                                {patient.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                                 {patients.length === 0 && (
                                     <p className="text-sm text-gray-500 flex items-center">
                                         <ExclamationTriangleIcon className="w-4 h-4 mr-1 text-yellow-500" />
@@ -471,7 +535,7 @@ export default function ConsultationForm() {
                         <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                             <button
                                 type="button"
-                                onClick={() => navigate('/consultations')}
+                                onClick={handleGoBack}
                                 className="px-6 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                             >
                                 Cancelar
@@ -511,6 +575,9 @@ export default function ConsultationForm() {
                                 <li>• El sistema procesará automáticamente las imágenes para generar el diagnóstico</li>
                                 <li>• Asegúrese de que las imágenes sean claras y de buena calidad</li>
                                 <li>• Una vez creada, la consulta se añadirá al historial del paciente</li>
+                                {preselectedPatientId && (
+                                    <li>• El paciente ha sido preseleccionado desde la página anterior</li>
+                                )}
                             </ul>
                         </div>
                     </div>
