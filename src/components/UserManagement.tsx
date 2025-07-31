@@ -186,6 +186,7 @@ const UserManagement = () => {
         setValue('username', user.username);
         setValue('full_name', user.full_name);
         setValue('role', user.role);
+        setValue('password', ''); // Reset password field
         setShowForm(true);
     };
 
@@ -483,7 +484,8 @@ const UserManagement = () => {
                                             <select
                                                 {...register('role', { required: 'El rol es requerido' })}
                                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
-                                                disabled={loading || Boolean(editingUser && currentUser?.id === editingUser.id)}                                            >
+                                                disabled={loading || Boolean(editingUser && currentUser?.id === editingUser.id)}
+                                            >
                                                 <option value="">Seleccionar Rol</option>
                                                 <option value="admin">Administrador</option>
                                                 <option value="doctor">Doctor</option>
@@ -493,9 +495,11 @@ const UserManagement = () => {
                                             )}
                                         </div>
 
-                                        {!editingUser && (
+                                        {(editingUser && currentUser?.role === 'admin') || !editingUser ? (
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    {editingUser ? 'Nueva Contraseña (opcional)' : 'Contraseña *'}
+                                                </label>
                                                 <input
                                                     type="password"
                                                     {...register('password', {
@@ -512,7 +516,7 @@ const UserManagement = () => {
                                                     <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
                                                 )}
                                             </div>
-                                        )}
+                                        ) : null}
                                     </div>
                                 </div>
 
