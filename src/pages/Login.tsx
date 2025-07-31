@@ -30,6 +30,7 @@ export default function Login() {
     const [rememberMe, setRememberMe] = useState(false);
     const [, setUsers] = useState<User[]>([]);
     const [, setLoadingUsers] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const { login, loading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -79,7 +80,8 @@ export default function Login() {
         e.preventDefault();
 
         if (!username.trim() || !password.trim()) {
-            toast.error('Please enter both username and password');
+            setErrorMessage('Por favor, ingrese usuario y contraseña');
+            toast.error('Por favor, ingrese usuario y contraseña');
             return;
         }
 
@@ -92,13 +94,29 @@ export default function Login() {
                 localStorage.removeItem('rememberedUsername');
             }
 
-            toast.success('Login successful');
+            setErrorMessage(null);
+            toast.success('Inicio de sesión exitoso');
             const from = location.state?.from?.pathname || '/dashboard';
             navigate(from, { replace: true });
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Login failed: Invalid credentials');
+            let errorMsg = 'Error al iniciar sesión';
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status;
+                if (status === 404) {
+                    errorMsg = 'Usuario no encontrado';
+                } else if (status === 401) {
+                    errorMsg = 'Usuario o contraseña incorrectos';
+                } else {
+                    errorMsg = error.response?.data?.error || 'Error al iniciar sesión';
+                }
+            } else if (error instanceof Error) {
+                errorMsg = error.message;
+            }
+            setErrorMessage(errorMsg);
+            toast.error(errorMsg);
         }
     };
+
     return (
         <div className="fixed inset-0 flex bg-gradient-to-br from-blue-50 to-indigo-50 overflow-auto">
             {/* Panel izquierdo - Información */}
@@ -223,6 +241,13 @@ export default function Login() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Error Message */}
+                            {errorMessage && (
+                                <div className="text-red-600 text-sm text-center">
+                                    {errorMessage}
+                                </div>
+                            )}
 
                             {/*<div className="flex items-center justify-between">*/}
                             {/*    <div className="flex items-center">*/}
